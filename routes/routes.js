@@ -26,26 +26,36 @@ const Op = db.Sequelize.Op;
       });
   });
 
-  router.post("/products", (req, res) =>{
-
+  router.post("/products", async (req, res) =>{
+    const values = req.body;
     const productValues = {
-      name: req.body.name,
-      amount: req.body.amount,
-      units: req.body.units,
-      brandId: req.body.brandId,
-      categoryId: req.body.categoryId
+      name: values.name,
+      amount: values.amount,
+      units: values.units,
+      brandId: values.brandId,
+      categoryId: values.categoryId
      };
 
-    model.create(productValues, 'Product')
-      .then(data => {
-        res.send(data);
+    const head = await model.create(productValues, 'Product');
+      // .then(data => {
+      //   res.send(data);
+      // })
+      // .catch(err => {
+      //   res.status(500).send({
+      //     message:
+      //       err.message || "Some error occurred while creating the products."
+      //   });
+      // });
+      // const spectValues = await db.Spect.findAll({
+      //   where: {}
+      // });
+      // const spects = [];
+      values.spects.forEach((spect) => {
+        spect.productId = head.id;
       })
-      .catch(err => {
-        res.status(500).send({
-          message:
-            err.message || "Some error occurred while creating the products."
-        });
-      });
+      await db.Spect.bulkCreate(values.spects,{ individualHooks: true});
+      res.send("Product added!!");
+
   });
 
   router.post("/categories", (req, res) =>{
@@ -151,10 +161,6 @@ const Op = db.Sequelize.Op;
   );
   res.send("Added in cart!!");
 
-      // db.Cart.qty = cartQuantity;
-      // console.log(cartQuantity);
-      // db.Cart.totalAmount = cartTotal;
-      // console.log(cartTotal);
     }
      else{
     model.create(cartValues, 'Cart')
@@ -168,6 +174,22 @@ const Op = db.Sequelize.Op;
         });
       });
     }
+  });
+
+  router.get("/brands/findall", (req, res) => {
+    const filter = {
+      where: {},
+    };
+    model.findAll(filter, 'Brand')
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving brands."
+      });
+    });
   });
 
   // Retrieve all brand
@@ -315,11 +337,19 @@ const Op = db.Sequelize.Op;
       cartIds.push(item.id);
     });
 
+    // Validation for Cart
+    if(orderQuantity === 0){
+      res.send("Add the Cart Items!!");
+    }
 
+    else{
     const orderValues = {
       qty: orderQuantity,
       totalAmount: orderTotal
      };
+
+
+    // else{
     console.log(orderTotal, orderQuantity);
     const order = await model.create(orderValues, 'Order')
 
@@ -344,7 +374,8 @@ const Op = db.Sequelize.Op;
     })
     console.log('orderItemValues', orderItemValues);
     await db.OrderItem.bulkCreate(orderItemValues, { individualHooks: true });
-
+    res.send("Orders Placed!!");
+}
   });
 
 
@@ -381,8 +412,16 @@ const Op = db.Sequelize.Op;
 
   router.get("/products/:id", (req, res) => {
     const id = req.params.id;
+    const filter = {
+      where: {
+        id: id
+      },
+      include: [{
+        model: db.Spect,
+      }]
+    }
 
-    model.findByPk(id, 'Product')
+    model.findOne(filter, 'Product')
     .then(data => {
       res.send(data);
     })
