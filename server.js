@@ -7,11 +7,11 @@ const brand = require("./app/routers/routers.js");
 const route = require("./routes/routes.js");
 db.sequelize.sync();
 
-let corsOptions = {
-  origin: "http://localhost:4000"
-};
+// let corsOptions = {
+//   origin: "http://localhost:4000"
+// };
 
-app.use(cors(corsOptions));
+app.use(cors());
 
 // parse requests of content-type - application/json
 app.use(express.json());

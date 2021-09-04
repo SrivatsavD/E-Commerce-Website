@@ -36,26 +36,26 @@ const Op = db.Sequelize.Op;
       categoryId: values.categoryId
      };
 
+     const brandValue = await model.findOne({where: { id: productValues.brandId}}, "Brand");
+
+     const categValue = await model.findOne({where: { id: productValues.categoryId}}, "Category");
+
+     if( brandValue && categValue){
+
     const head = await model.create(productValues, 'Product');
-      // .then(data => {
-      //   res.send(data);
-      // })
-      // .catch(err => {
-      //   res.status(500).send({
-      //     message:
-      //       err.message || "Some error occurred while creating the products."
-      //   });
-      // });
-      // const spectValues = await db.Spect.findAll({
-      //   where: {}
-      // });
-      // const spects = [];
+
       values.spects.forEach((spect) => {
         spect.productId = head.id;
       })
       await db.Spect.bulkCreate(values.spects,{ individualHooks: true});
       res.send("Product added!!");
+}
 
+  else {
+    res.status(500).send({
+      message: "Enter correct brandId and categoryId!!"
+    });
+  }
   });
 
   router.post("/categories", (req, res) =>{
@@ -127,6 +127,9 @@ const Op = db.Sequelize.Op;
       productId: req.body.productId
      };
 
+     const productValue = await model.findOne({ where: {id: cartValues.productId }}, "Product");
+     if( productValue ){
+
      const cartItems = await db.Cart.findAll({
        where: {
          status: {
@@ -174,6 +177,12 @@ const Op = db.Sequelize.Op;
         });
       });
     }
+  }
+  else{
+    res.status(500).send({
+      message: "Enter correct ProductId!!"
+    });
+  }
   });
 
   router.get("/brands/findall", (req, res) => {
@@ -193,17 +202,47 @@ const Op = db.Sequelize.Op;
   });
 
   // Retrieve all brand
-  router.get("/products/findall", (req, res) => {
+  router.get("/products", (req, res) => {
+    const options = req.query;
+    let spectFilter = {};
+    if(options.spectId){
+      spectFilter.id = options.spectId;
+    }
+    let categorySearchFilter = {};
+    if (options.categorySearchQuery) {
+      categorySearchFilter = {
+        name: {
+        [Op.iLike]: `%${options.categorySearchQuery}%`
+        }
+      }
+    }
     const filter = {
       where: {},
       include: [
         {
           model: db.Brand
         }, {
-          model: db.Spect
+          model: db.Spect,
+          where: spectFilter
+        }, {
+          model: db.Category,
+          where: categorySearchFilter
         }
       ]
     };
+    if(options.brandId){
+      filter.where.brandId = options.brandId;
+    }
+    if(options.categoryId){
+      filter.where.categoryId = options.categoryId;
+    }
+
+    if(options.productSearchQuery){
+      filter.where.name = {
+        [Op.iLike]: `%${options.productSearchQuery}%`
+      }
+    }
+
     model.findAll(filter, 'Product')
     .then(data => {
       res.send(data);
@@ -316,7 +355,7 @@ const Op = db.Sequelize.Op;
     res.send(ret)
   })
 
-  router.post("/order", async (req, res) =>{
+  router.post("/orders", async (req, res) =>{
 
     const cartItems = await db.Cart.findAll({
       where: {
@@ -339,7 +378,7 @@ const Op = db.Sequelize.Op;
 
     // Validation for Cart
     if(orderQuantity === 0){
-      res.send("Add the Cart Items!!");
+      res.status(500).send("Add the Cart Items!!");
     }
 
     else{
@@ -432,6 +471,26 @@ const Op = db.Sequelize.Op;
     });
   });
 
+  router.get("/product/:name", (req, res) => {
+    const name = req.params.name;
+    const filter = {
+      where: { name: name},
+      include:[{
+        model: db.Spect,
+      }]
+    };
+
+    model.findAll(filter, 'Product')
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message: "Error retrieving product with name = " + name
+      });
+    });
+  });
+
   router.get("/categories/:id", (req, res) => {
     const id = req.params.id;
 
@@ -442,6 +501,23 @@ const Op = db.Sequelize.Op;
     .catch(err => {
       res.status(500).send({
         message: "Error retrieving category with id=" + id
+      });
+    });
+  });
+
+  router.get("/category/:name", (req, res) => {
+    const name = req.params.name;
+    const filter = {
+      where: { name: name}
+    };
+
+    model.findAll(filter, 'Category')
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message: "Error retrieving category with name = " + name
       });
     });
   });
