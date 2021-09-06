@@ -58,6 +58,69 @@ const Op = db.Sequelize.Op;
   }
   });
 
+  router.put("/products/:id", async (req, res) => {
+    const ID = req.params.id;
+    const spect = [];
+    const spectItems = await db.Spect.findAll({where: {}});
+
+    db.Product.update(req.body, { where: { id: ID } } );
+
+    if( req.body.spect ){
+
+
+      req.body.spect.forEach((item) => {
+        const spectValues = {
+        id: item.id,
+        method: item.method,
+        name: item.name,
+        value: item.value,
+        productId: ID
+      }
+      // console.log(11);
+      spect.push(spectValues);
+      })
+
+      // console.log(7);
+      spect.forEach((items) => {
+        // console.log(item);
+        if(items.method === "create"){
+          // console.log(1);
+          const spects = {
+            name: items.name,
+            value: items.value,
+            productId: ID
+          }
+          // console.log(2);
+          model.create(spects, "Spect");
+          // console.log(3);
+        }
+        // console.log(8);
+
+        if( items.method === "update"){
+          db.Spect.update({
+            name: items.name,
+            value: items.value,
+            productId: ID
+          }, {
+            where: {
+              id: items.id
+             }
+           });
+        }
+
+        // console.log(9);
+        if( items.method === "delete"){
+          db.Spect.destroy({
+            where: {
+              id: items.id
+            }
+          })
+      }
+    })
+}
+    res.send("Product Updated!!!");
+  });
+
   router.post("/categories", (req, res) =>{
 
     const productValues = {

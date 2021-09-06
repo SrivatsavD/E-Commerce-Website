@@ -47,29 +47,39 @@ exports.findOne = ( values, model) => {
   return Model.findOne(values);
 };
 
-exports.update = (req, res) => {
-  const id = req.params.id;
-
-  Brand.update(req.body, {
-    where: {id: id}
-  })
-    .then(num => {
-      if (num == 1) {
-        res.send({
-          message: "Brand was updated successfully."
-        });
-      } else {
-        res.send({
-          message: `Cannot update brand with id = ${id}. Maybe brand was not found or req.body is empty!`
-        });
-      }
-    })
-    .catch(err => {
-      res.status(500).send({
-        message: "Error updating brand with id=" + id
-      });
-    });
+exports.findAndCountAll = ( values, model) => {
+  const Model = db[model];
+  return Model.findAndCountAll(values);
 };
+
+exports.update = ( values, model) => {
+  const Model = db[model];
+  return Model.update(values);
+};
+
+// exports.update = (req, res) => {
+//   const id = req.params.id;
+//
+//   Brand.update(req.body, {
+//     where: {id: id}
+//   })
+//     .then(num => {
+//       if (num == 1) {
+//         res.send({
+//           message: "Brand was updated successfully."
+//         });
+//       } else {
+//         res.send({
+//           message: `Cannot update brand with id = ${id}. Maybe brand was not found or req.body is empty!`
+//         });
+//       }
+//     })
+//     .catch(err => {
+//       res.status(500).send({
+//         message: "Error updating brand with id=" + id
+//       });
+//     });
+// };
 
 exports.delete = (req, res) => {
   const id = req.params.id;
