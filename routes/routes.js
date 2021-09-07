@@ -9,7 +9,7 @@ const Op = db.Sequelize.Op;
   //console.log(111);
 
   // Create a new brand
-  router.post("/brands", (req, res) =>{
+  router.post("/api/brands", (req, res) =>{
       const brandValues = {
          name: req.body.name,
        };
@@ -26,7 +26,7 @@ const Op = db.Sequelize.Op;
       });
   });
 
-  router.post("/products", async (req, res) =>{
+  router.post("/api/products", async (req, res) =>{
     const values = req.body;
     const productValues = {
       name: values.name,
@@ -48,7 +48,7 @@ const Op = db.Sequelize.Op;
         spect.productId = head.id;
       })
       await db.Spect.bulkCreate(values.spects,{ individualHooks: true});
-      res.send("Product added!!");
+      res.status(201).send("Product added!!");
 }
 
   else {
@@ -58,7 +58,7 @@ const Op = db.Sequelize.Op;
   }
   });
 
-  router.put("/products/:id", async (req, res) => {
+  router.put("/api/products/:id", async (req, res) => {
     const ID = req.params.id;
     const spect = [];
     const spectItems = await db.Spect.findAll({where: {}});
@@ -118,10 +118,10 @@ const Op = db.Sequelize.Op;
       }
     })
 }
-    res.send("Product Updated!!!");
+    res.status(200).send("Product Updated!!!");
   });
 
-  router.post("/categories", (req, res) =>{
+  router.post("/api/categories", (req, res) =>{
 
     const productValues = {
       name: req.body.name,
@@ -129,7 +129,7 @@ const Op = db.Sequelize.Op;
 
     model.create(productValues, 'Category')
       .then(data => {
-        res.send(data);
+        res.status(201).send(data);
       })
       .catch(err => {
         res.status(500).send({
@@ -139,7 +139,7 @@ const Op = db.Sequelize.Op;
       });
   });
 
-  router.post("/spects", (req, res) =>{
+  router.post("/api/spects", (req, res) =>{
 
     const spectValues = {
       name: req.body.name,
@@ -149,7 +149,7 @@ const Op = db.Sequelize.Op;
 
     model.create(spectValues, 'Spect')
       .then(data => {
-        res.send(data);
+        res.status(201).send(data);
       })
       .catch(err => {
         res.status(500).send({
@@ -180,7 +180,7 @@ const Op = db.Sequelize.Op;
   //     });
   // });
 
-  router.post("/cart", async (req, res) =>{
+  router.post("/api/cart", async (req, res) =>{
 
     const cartValues = {
       qty: req.body.qty,
@@ -225,13 +225,13 @@ const Op = db.Sequelize.Op;
       }
     }
   );
-  res.send("Added in cart!!");
+  res.status(201).send("Added in cart!!");
 
     }
      else{
     model.create(cartValues, 'Cart')
       .then(data => {
-        res.send(data);
+        res.status(201).send(data);
       })
       .catch(err => {
         res.status(500).send({
@@ -248,13 +248,13 @@ const Op = db.Sequelize.Op;
   }
   });
 
-  router.get("/brands/findall", (req, res) => {
+  router.get("/api/brands/findall", (req, res) => {
     const filter = {
       where: {},
     };
     model.findAll(filter, 'Brand')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -265,12 +265,21 @@ const Op = db.Sequelize.Op;
   });
 
   // Retrieve all brand
-  router.get("/products", (req, res) => {
+  router.get("/api/products", (req, res) => {
     const options = req.query;
+
     let spectFilter = {};
-    if(options.spectId){
+    let filterarray;
+    if(Array.isArray(options.spectId)) {
+      filterarray  = options.spectId.filter(x => x !== '');
+    } else if(options.spectId == '') {
+      filterarray = null;
+    }
+    // console.log("options.spectId",options.spectId)
+    if(options.spectId && filterarray && filterarray.length){
       spectFilter.id = options.spectId;
     }
+
     let categorySearchFilter = {};
     if (options.categorySearchQuery) {
       categorySearchFilter = {
@@ -279,17 +288,32 @@ const Op = db.Sequelize.Op;
         }
       }
     }
+
+    let brandSearchQuery = {};
+    if (options.brandSearchQuery){
+      brandSearchQuery = {
+        name: {
+          [Op.iLike]: `%${options.brandSearchQuery}%`
+        }
+      }
+    }
+    // console.log(spectFilter);
+
     const filter = {
       where: {},
       include: [
         {
-          model: db.Brand
+          model: db.Brand,
+          where: brandSearchQuery,
+          required: false
         }, {
           model: db.Spect,
-          where: spectFilter
+          where: spectFilter,
+          required: false
         }, {
           model: db.Category,
-          where: categorySearchFilter
+          where: categorySearchFilter,
+          required: false
         }
       ]
     };
@@ -305,10 +329,11 @@ const Op = db.Sequelize.Op;
         [Op.iLike]: `%${options.productSearchQuery}%`
       }
     }
+    // console.log(filter);
 
     model.findAll(filter, 'Product')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -318,7 +343,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/spects/findall", (req, res) => {
+  router.get("/api/spects/findall", (req, res) => {
     const filter = {
       where: {},
       include: [
@@ -329,7 +354,7 @@ const Op = db.Sequelize.Op;
     };
     model.findAll(filter, 'Spect')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -341,7 +366,7 @@ const Op = db.Sequelize.Op;
 
 
 
-  router.get("/cart/findall", (req, res) => {
+  router.get("/api/cart/findall", (req, res) => {
     const filter = {
       where: { status: "active"},
       include: [
@@ -357,7 +382,7 @@ const Op = db.Sequelize.Op;
     };
     model.findAll(filter, 'Cart')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -367,7 +392,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/order/findall", (req, res) => {
+  router.get("/api/order/findall", (req, res) => {
     const filter = {
       where: {},
       include: [
@@ -379,7 +404,7 @@ const Op = db.Sequelize.Op;
     };
     model.findAll(filter, 'Order')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -389,7 +414,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get('/order', async (req,res) => {
+  router.get('/api/order', async (req,res) => {
     const filter = {
       where: {},
       include: [{
@@ -399,10 +424,10 @@ const Op = db.Sequelize.Op;
       }]
     }
     const ret = await db.Order.findAll(filter);
-    res.send(ret)
+    res.status(200).send(ret)
   })
 
-  router.get('/order/:orderId', async (req,res) => {
+  router.get('/api/order/:orderId', async (req,res) => {
     const { orderId } = req.params;
     const filter = {
       where: {
@@ -415,10 +440,10 @@ const Op = db.Sequelize.Op;
       }]
     }
     const ret = await db.Order.findOne(filter);
-    res.send(ret)
+    res.status(200).send(ret);
   })
 
-  router.post("/orders", async (req, res) =>{
+  router.post("/api/orders", async (req, res) =>{
 
     const cartItems = await db.Cart.findAll({
       where: {
@@ -476,17 +501,17 @@ const Op = db.Sequelize.Op;
     })
     console.log('orderItemValues', orderItemValues);
     await db.OrderItem.bulkCreate(orderItemValues, { individualHooks: true });
-    res.send("Orders Placed!!");
+    res.status(201).send("Orders Placed!!");
 }
   });
 
 
-  router.get("/brands/:id", (req, res) => {
+  router.get("/api/brands/:id", (req, res) => {
     const id = req.params.id;
 
     model.findByPk(id, 'Brand')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -495,7 +520,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/brand/:name", (req, res) => {
+  router.get("/api/brand/:name", (req, res) => {
     const name = req.params.name;
     const filter = {
       where: { name: name}
@@ -503,7 +528,7 @@ const Op = db.Sequelize.Op;
 
     model.findAll(filter, 'Brand')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -512,7 +537,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/products/:id", (req, res) => {
+  router.get("/api/products/:id", (req, res) => {
     const id = req.params.id;
     const filter = {
       where: {
@@ -525,7 +550,7 @@ const Op = db.Sequelize.Op;
 
     model.findOne(filter, 'Product')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -534,7 +559,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/product/:name", (req, res) => {
+  router.get("/api/product/:name", (req, res) => {
     const name = req.params.name;
     const filter = {
       where: { name: name},
@@ -545,7 +570,7 @@ const Op = db.Sequelize.Op;
 
     model.findAll(filter, 'Product')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -554,12 +579,12 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/categories/:id", (req, res) => {
+  router.get("/api/categories/:id", (req, res) => {
     const id = req.params.id;
 
     model.findByPk(id, 'Category')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -568,7 +593,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/category/:name", (req, res) => {
+  router.get("/api/category/:name", (req, res) => {
     const name = req.params.name;
     const filter = {
       where: { name: name}
@@ -576,7 +601,7 @@ const Op = db.Sequelize.Op;
 
     model.findAll(filter, 'Category')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -585,12 +610,12 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/spects/:id", (req, res) => {
+  router.get("/api/spects/:id", (req, res) => {
     const id = req.params.id;
 
     model.findByPk(id, 'Spect')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -599,7 +624,7 @@ const Op = db.Sequelize.Op;
     });
   });
 
-  router.get("/spect/:value", (req, res) => {
+  router.get("/api/spect/:value", (req, res) => {
     const value = req.params.value;
     const filter = {
       where: { value: value },
@@ -610,7 +635,7 @@ const Op = db.Sequelize.Op;
 
     model.findAll(filter, 'Spect')
     .then(data => {
-      res.send(data);
+      res.status(200).send(data);
     })
     .catch(err => {
       res.status(500).send({
@@ -640,13 +665,13 @@ const Op = db.Sequelize.Op;
   // router.delete("/:id", model.delete);
 
 
-  router.delete("/brands/deleteAll", (req, res) => {
+  router.delete("/api/brands/deleteAll", (req, res) => {
       model.destroy({
         where: {},
         truncate: false
       })
         .then(nums => {
-          res.send({ message: `${nums} Mobiles were deleted successfully!` });
+          res.status(204).send({ message: `${nums} Mobiles were deleted successfully!` });
         })
         .catch(err => {
           res.status(500).send({
@@ -655,13 +680,13 @@ const Op = db.Sequelize.Op;
           });
         });
   });
-  router.delete("products/deleteAll", (req, res) => {
+  router.delete("/api/products/deleteAll", (req, res) => {
       model.destroy({
         where: {},
         truncate: false
       })
         .then(nums => {
-          res.send({ message: `${nums} Mobiles were deleted successfully!` });
+          res.status(204).send({ message: `${nums} Mobiles were deleted successfully!` });
         })
         .catch(err => {
           res.status(500).send({
