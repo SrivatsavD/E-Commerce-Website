@@ -264,6 +264,22 @@ const Op = db.Sequelize.Op;
     });
   });
 
+  router.get("/api/categories/findall", (req, res) => {
+    const filter = {
+      where: {},
+    };
+    model.findAll(filter, 'Category')
+    .then(data => {
+      res.status(200).send(data);
+    })
+    .catch(err => {
+      res.status(500).send({
+        message:
+          err.message || "Some error occurred while retrieving categories."
+      });
+    });
+  });
+
   // Retrieve all brand
   router.get("/api/products", (req, res) => {
     const options = req.query;
