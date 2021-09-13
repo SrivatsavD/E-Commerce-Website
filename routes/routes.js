@@ -321,7 +321,7 @@ const Op = db.Sequelize.Op;
         {
           model: db.Brand,
           where: brandSearchQuery,
-          required: false
+          required: true
         }, {
           model: db.Spect,
           where: spectFilter,
@@ -329,7 +329,7 @@ const Op = db.Sequelize.Op;
         }, {
           model: db.Category,
           where: categorySearchFilter,
-          required: false
+          required: true
         }
       ]
     };
